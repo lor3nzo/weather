@@ -29,6 +29,59 @@
             --spacing-xl: 96px;
         }
 
+        [data-theme="dark"] {
+            --color-bg: #1a1a1a;
+            --color-text: #fafafa;
+            --color-text-light: #aaa;
+            --color-border: #333;
+            --color-accent: #e0e0e0;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 32px;
+            right: 32px;
+            width: 48px;
+            height: 48px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            border-color: #4169e1;
+            transform: rotate(180deg);
+        }
+
+        .theme-toggle svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--color-text);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle .sun-icon {
+            display: none;
+        }
+
+        .theme-toggle .moon-icon {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle .sun-icon {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle .moon-icon {
+            display: none;
+        }
+
         body {
             font-family: var(--font-primary);
             background: var(--color-bg);
@@ -113,7 +166,7 @@
             font-size: 16px;
             font-family: var(--font-primary);
             border: 1px solid var(--color-border);
-            background: white;
+            background: var(--color-bg);
             color: var(--color-text);
             transition: border-color 0.3s ease;
         }
@@ -162,7 +215,7 @@
             align-items: center;
             gap: 4px;
             padding: 6px 12px;
-            background: white;
+            background: var(--color-bg);
             border: 1px solid var(--color-border);
             cursor: pointer;
             transition: all 0.3s ease;
@@ -268,7 +321,7 @@
         .weather-table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background: var(--color-bg);
             border: 1px solid var(--color-border);
         }
 
@@ -403,6 +456,23 @@
     </style>
 </head>
 <body>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+    </button>
+    
     <div class="container">
         <header>
             <div class="logo">
@@ -1070,6 +1140,22 @@
         // Initialize on page load
         loadFavorites();
         loadDefaultLocation();
+
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const htmlElement = document.documentElement;
+
+        // Load saved theme or default to light
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        htmlElement.setAttribute('data-theme', savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            htmlElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
     </script>
 </body>
 </html>
