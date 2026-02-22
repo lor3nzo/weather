@@ -97,10 +97,13 @@
         .location-input-wrapper {
             position: relative;
             margin-bottom: var(--spacing-md);
+            display: flex;
+            gap: var(--spacing-xs);
+            align-items: center;
         }
 
         #locationInput {
-            width: 100%;
+            flex: 1;
             max-width: 500px;
             padding: var(--spacing-sm);
             font-size: 16px;
@@ -118,6 +121,79 @@
 
         #locationInput::placeholder {
             color: var(--color-text-light);
+        }
+
+        .save-favorite-btn {
+            padding: var(--spacing-sm);
+            font-size: 20px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            line-height: 1;
+        }
+
+        .save-favorite-btn:hover {
+            border-color: #ff6b35;
+            color: #ff6b35;
+        }
+
+        .favorites-container {
+            margin-bottom: var(--spacing-md);
+            font-size: 12px;
+            color: var(--color-text-light);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .favorites-list {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-xs);
+            flex-wrap: wrap;
+        }
+
+        .favorite-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid var(--color-border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .favorite-item:hover {
+            border-color: var(--color-accent);
+            background: var(--color-bg);
+        }
+
+        .favorite-star {
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .favorite-star:hover {
+            color: #ff6b35;
+        }
+
+        .favorite-name {
+            color: var(--color-text);
+        }
+
+        .favorite-remove {
+            margin-left: 4px;
+            color: var(--color-text-light);
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .favorite-remove:hover {
+            color: #c62828;
         }
 
         .view-toggle {
@@ -342,6 +418,12 @@
                 placeholder="Enter city, state, country or ZIP code"
                 autocomplete="off"
             >
+            <button id="saveFavoriteBtn" class="save-favorite-btn" title="Save as favorite">★</button>
+        </div>
+
+        <div id="favoritesContainer" class="favorites-container hidden">
+            <div style="margin-bottom: 4px;">Favorites</div>
+            <div id="favoritesList" class="favorites-list"></div>
         </div>
 
         <div class="view-toggle">
@@ -380,9 +462,148 @@
         let locationData = null;
         let temperatureUnit = 'fahrenheit'; // 'fahrenheit' or 'celsius'
         let locationTimezone = null; // Store the location's timezone
+        let favorites = []; // Array of favorite locations
+
+        // Load favorites from localStorage on page load
+        function loadFavorites() {
+            const saved = localStorage.getItem('weatherFavorites');
+            if (saved) {
+                favorites = JSON.parse(saved);
+                renderFavorites();
+            }
+        }
+
+        // Save favorites to localStorage
+        function saveFavorites() {
+            localStorage.setItem('weatherFavorites', JSON.stringify(favorites));
+        }
+
+        // Render favorites UI
+        function renderFavorites() {
+            if (favorites.length === 0) {
+                elements.favoritesContainer.classList.add('hidden');
+                return;
+            }
+
+            elements.favoritesContainer.classList.remove('hidden');
+            elements.favoritesList.innerHTML = '';
+
+            favorites.forEach((fav, index) => {
+                const div = document.createElement('div');
+                div.className = 'favorite-item';
+                
+                const star = document.createElement('span');
+                star.className = 'favorite-star';
+                star.textContent = fav.isDefault ? '★' : '☆';
+                star.title = fav.isDefault ? 'Default location' : 'Set as default';
+                star.onclick = (e) => {
+                    e.stopPropagation();
+                    setDefaultFavorite(index);
+                };
+
+                const name = document.createElement('span');
+                name.className = 'favorite-name';
+                name.textContent = fav.name;
+
+                const remove = document.createElement('span');
+                remove.className = 'favorite-remove';
+                remove.textContent = '×';
+                remove.title = 'Remove';
+                remove.onclick = (e) => {
+                    e.stopPropagation();
+                    removeFavorite(index);
+                };
+
+                div.appendChild(star);
+                div.appendChild(name);
+                div.appendChild(remove);
+                
+                div.onclick = () => loadFavorite(fav);
+
+                elements.favoritesList.appendChild(div);
+            });
+        }
+
+        // Add current location as favorite
+        function addFavorite() {
+            if (!locationData) return;
+
+            const { name, country, admin1, latitude, longitude } = locationData;
+            const locationName = admin1 ? `${name}, ${admin1}, ${country}` : `${name}, ${country}`;
+            const searchQuery = elements.locationInput.value.trim(); // Store original search
+
+            // Check if already in favorites
+            const exists = favorites.find(f => 
+                f.latitude === latitude && f.longitude === longitude
+            );
+
+            if (exists) {
+                showError('This location is already in your favorites');
+                return;
+            }
+
+            // Check if we already have 3 favorites
+            if (favorites.length >= 3) {
+                showError('Maximum 3 favorites allowed. Remove one to add another.');
+                return;
+            }
+
+            // Add as favorite
+            const favorite = {
+                name: locationName,
+                searchQuery: searchQuery,
+                latitude,
+                longitude,
+                isDefault: favorites.length === 0 // First favorite is default
+            };
+
+            favorites.push(favorite);
+            saveFavorites();
+            renderFavorites();
+        }
+
+        // Set a favorite as default
+        function setDefaultFavorite(index) {
+            favorites.forEach((fav, i) => {
+                fav.isDefault = i === index;
+            });
+            saveFavorites();
+            renderFavorites();
+        }
+
+        // Remove a favorite
+        function removeFavorite(index) {
+            const wasDefault = favorites[index].isDefault;
+            favorites.splice(index, 1);
+
+            // If removed was default and there are still favorites, make first one default
+            if (wasDefault && favorites.length > 0) {
+                favorites[0].isDefault = true;
+            }
+
+            saveFavorites();
+            renderFavorites();
+        }
+
+        // Load weather for a favorite location
+        function loadFavorite(favorite) {
+            elements.locationInput.value = favorite.searchQuery || favorite.name;
+            fetchWeather(favorite.searchQuery || favorite.name);
+        }
+
+        // Load default location on page load
+        function loadDefaultLocation() {
+            const defaultFav = favorites.find(f => f.isDefault);
+            if (defaultFav) {
+                loadFavorite(defaultFav);
+            }
+        }
 
         const elements = {
             locationInput: document.getElementById('locationInput'),
+            saveFavoriteBtn: document.getElementById('saveFavoriteBtn'),
+            favoritesContainer: document.getElementById('favoritesContainer'),
+            favoritesList: document.getElementById('favoritesList'),
             dailyBtn: document.getElementById('dailyBtn'),
             hourlyBtn: document.getElementById('hourlyBtn'),
             fahrenheitBtn: document.getElementById('fahrenheitBtn'),
@@ -428,6 +649,11 @@
             if (location && shouldFetchWeather(location)) {
                 fetchWeather(location);
             }
+        });
+
+        // Save favorite button
+        elements.saveFavoriteBtn.addEventListener('click', () => {
+            addFavorite();
         });
 
         function shouldFetchWeather(location) {
@@ -732,6 +958,10 @@
         function showWeatherData() {
             elements.weatherData.classList.remove('hidden');
         }
+
+        // Initialize on page load
+        loadFavorites();
+        loadDefaultLocation();
     </script>
 </body>
 </html>
