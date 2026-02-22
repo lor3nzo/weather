@@ -816,23 +816,64 @@
         function renderHourlyView() {
             const { hourly } = weatherData;
             
-            // Get current date in location's timezone - same approach as daily
+            // Get current date and time in location's timezone
+            const now = new Date();
+            const currentTimeString = now.toLocaleString('en-US', { 
+                timeZone: locationTimezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            console.log('=== HOURLY DEBUG ===');
+            console.log('Current time in location:', currentTimeString);
+            console.log('First 5 hourly times from API:', hourly.time.slice(0, 5));
+            
+            // Parse current time to get current hour
+            const currentDate = new Date(now.toLocaleString('en-US', { timeZone: locationTimezone }));
+            const currentHour = currentDate.getHours();
+            
+            console.log('Current hour:', currentHour);
+            
+            // Find the closest hour in the API data (current hour or next hour)
+            let startIndex = 0;
             const formatter = new Intl.DateTimeFormat('en-CA', { 
                 timeZone: locationTimezone,
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
             });
-            const todayDateString = formatter.format(new Date());
+            const todayDateString = formatter.format(now);
             
-            // Find the index where today starts
-            let startIndex = 0;
+            console.log('Looking for date:', todayDateString, 'at hour:', currentHour);
+            
             for (let i = 0; i < hourly.time.length; i++) {
-                if (hourly.time[i].startsWith(todayDateString)) {
+                const apiTime = hourly.time[i];
+                const apiDate = apiTime.split('T')[0];
+                const apiHour = parseInt(apiTime.split('T')[1].split(':')[0]);
+                
+                console.log(`Checking index ${i}: date=${apiDate}, hour=${apiHour}`);
+                
+                // Find first entry that is today and at or after current hour
+                if (apiDate === todayDateString && apiHour >= currentHour) {
                     startIndex = i;
+                    console.log('✓ Found current/next hour at index:', i, 'time:', apiTime);
+                    break;
+                }
+                // Or if we've passed today, start from tomorrow
+                if (apiDate > todayDateString) {
+                    startIndex = i;
+                    console.log('✓ Starting from tomorrow at index:', i, 'time:', apiTime);
                     break;
                 }
             }
+            
+            console.log('Starting hourly display from index:', startIndex);
+            console.log('First displayed hour will be:', hourly.time[startIndex]);
             
             let html = '<div class="scroll-hint">Scroll to view all 16 days of hourly data</div>';
             html += '<table class="weather-table"><thead><tr>';
@@ -844,7 +885,7 @@
 
             let currentDay = null;
             
-            // Show 16 days worth of hourly data starting from today
+            // Show 16 days worth of hourly data starting from current hour
             const endIndex = Math.min(startIndex + (16 * 24), hourly.time.length);
 
             for (let i = startIndex; i < endIndex; i++) {
