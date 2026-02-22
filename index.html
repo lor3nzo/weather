@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-bg: #fafafa;
+            --color-text: #1a1a1a;
+            --color-text-light: #666;
+            --color-border: #e0e0e0;
+            --color-accent: #2a2a2a;
+            --font-primary: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            --spacing-xs: 8px;
+            --spacing-sm: 16px;
+            --spacing-md: 32px;
+            --spacing-lg: 64px;
+            --spacing-xl: 96px;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-lg) var(--spacing-md);
+        }
+
+        header {
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--color-border);
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            gap: var(--spacing-md);
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #ff6b35;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        .logo-top {
+            font-size: 18px;
+            font-weight: 400;
+            color: white;
+            letter-spacing: 0;
+            text-align: center;
+        }
+
+        .logo-bottom {
+            font-size: 22px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 0;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 0;
+            color: var(--color-text-light);
+            padding-bottom: 4px;
+        }
+
+        .header-content {
+            flex: 1;
+        }
+
+        .location-input-wrapper {
+            position: relative;
+            margin-bottom: var(--spacing-md);
+        }
+
+        #locationInput {
+            width: 100%;
+            max-width: 500px;
+            padding: var(--spacing-sm);
+            font-size: 16px;
+            font-family: var(--font-primary);
+            border: 1px solid var(--color-border);
+            background: white;
+            color: var(--color-text);
+            transition: border-color 0.3s ease;
+        }
+
+        #locationInput:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        #locationInput::placeholder {
+            color: var(--color-text-light);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+        }
+
+        .view-toggle button {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: 13px;
+            font-family: var(--font-primary);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .view-toggle button.active {
+            background: var(--color-accent);
+            color: white;
+            border-color: var(--color-accent);
+        }
+
+        .view-toggle button:hover:not(.active) {
+            border-color: var(--color-accent);
+        }
+
+        #loading {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--color-text-light);
+            font-size: 14px;
+            letter-spacing: 0.05em;
+        }
+
+        #error {
+            padding: var(--spacing-md);
+            background: #fff;
+            border: 1px solid #ffebee;
+            color: #c62828;
+            font-size: 14px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .location-header {
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .location-name {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .location-coords {
+            font-size: 12px;
+            color: var(--color-text-light);
+            letter-spacing: 0.05em;
+        }
+
+        .weather-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border: 1px solid var(--color-border);
+        }
+
+        .weather-table thead {
+            background: var(--color-bg);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .weather-table th {
+            padding: var(--spacing-sm);
+            text-align: left;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--color-text-light);
+        }
+
+        .weather-table td {
+            padding: var(--spacing-sm);
+            font-size: 14px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .weather-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .weather-table tbody tr:hover {
+            background: var(--color-bg);
+        }
+
+        .day-group {
+            background: #f5f5f5;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--color-text);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .temp {
+            font-weight: 500;
+        }
+
+        .precipitation {
+            color: var(--color-text-light);
+        }
+
+        .sun-times {
+            font-size: 12px;
+            color: var(--color-text-light);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        footer {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--color-border);
+            font-size: 12px;
+            line-height: 1.8;
+            color: var(--color-text-light);
+            text-align: center;
+        }
+
+        footer h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+            letter-spacing: 0.05em;
+        }
+
+        footer h2 a {
+            color: #ff6b35;
+            text-decoration: none;
+        }
+
+        footer h2 a:hover {
+            text-decoration: underline;
+        }
+
+        footer p {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        footer a {
+            color: #ff6b35;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--spacing-md) var(--spacing-sm);
+            }
+
+            header {
+                margin-bottom: var(--spacing-md);
+                padding-bottom: var(--spacing-md);
+            }
+
+            h1 {
+                font-size: 12px;
+                margin-bottom: var(--spacing-md);
+            }
+
+            .weather-table {
+                font-size: 12px;
+            }
+
+            .weather-table th,
+            .weather-table td {
+                padding: var(--spacing-xs);
+            }
+        }
+
+        .scroll-hint {
+            text-align: center;
+            padding: var(--spacing-md);
+            font-size: 12px;
+            color: var(--color-text-light);
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-top">The</div>
+                <div class="logo-bottom">ONE</div>
+            </div>
+            
+            <div class="header-content">
+                <h1>The Minimalist Weather Forecast</h1>
+            </div>
+        </header>
+
+        <div class="location-input-wrapper">
+            <input 
+                type="text" 
+                id="locationInput" 
+                placeholder="Enter city, state, country or ZIP code"
+                autocomplete="off"
+            >
+        </div>
+
+        <div class="view-toggle">
+            <button id="dailyBtn" class="active">Daily</button>
+            <button id="hourlyBtn">Hourly</button>
+        </div>
+
+        <div class="view-toggle" style="margin-top: 16px;">
+            <button id="fahrenheitBtn" class="active">°F</button>
+            <button id="celsiusBtn">°C</button>
+        </div>
+
+        <div id="error" class="hidden"></div>
+        <div id="loading" class="hidden">Loading...</div>
+        
+        <div id="weatherData" class="hidden">
+            <div class="location-header">
+                <div class="location-name" id="locationName"></div>
+                <div class="location-coords" id="locationCoords"></div>
+            </div>
+            
+            <div id="dailyView"></div>
+            <div id="hourlyView" class="hidden"></div>
+        </div>
+
+        <footer>
+            <h2><a href="https://github.com/lor3nzo/weather" target="_blank" rel="noopener">GNU GENERAL PUBLIC LICENSE Version 3</a></h2>
+            <p>This website and the content provided are for educational and informational purposes only. Nothing on this site constitutes meteorological, safety, emergency management, legal, or other professional advice. The forecasts, alerts, maps, models, and other information displayed may be experimental, delayed, inaccurate, incomplete, or unavailable at times.</p>
+            <p>You should not rely on this website as the sole basis for making safety or travel decisions. Always consult official sources such as your national weather service and local authorities for watches, warnings, and emergency instructions. The creator of this site is not a licensed meteorologist or emergency services professional, and expressly disclaims any liability for actions taken or not taken based on the information provided herein.</p>
+        </footer>
+    </div>
+
+    <script>
+        let currentView = 'daily';
+        let weatherData = null;
+        let locationData = null;
+        let temperatureUnit = 'fahrenheit'; // 'fahrenheit' or 'celsius'
+        let locationTimezone = null; // Store the location's timezone
+
+        const elements = {
+            locationInput: document.getElementById('locationInput'),
+            dailyBtn: document.getElementById('dailyBtn'),
+            hourlyBtn: document.getElementById('hourlyBtn'),
+            fahrenheitBtn: document.getElementById('fahrenheitBtn'),
+            celsiusBtn: document.getElementById('celsiusBtn'),
+            loading: document.getElementById('loading'),
+            error: document.getElementById('error'),
+            weatherData: document.getElementById('weatherData'),
+            locationName: document.getElementById('locationName'),
+            locationCoords: document.getElementById('locationCoords'),
+            dailyView: document.getElementById('dailyView'),
+            hourlyView: document.getElementById('hourlyView')
+        };
+
+        // View toggle
+        elements.dailyBtn.addEventListener('click', () => {
+            const location = elements.locationInput.value.trim();
+            if (location && shouldFetchWeather(location)) {
+                fetchWeather(location);
+            }
+            switchView('daily');
+        });
+        
+        elements.hourlyBtn.addEventListener('click', () => {
+            const location = elements.locationInput.value.trim();
+            if (location && shouldFetchWeather(location)) {
+                fetchWeather(location);
+            }
+            switchView('hourly');
+        });
+
+        // Temperature unit toggle
+        elements.fahrenheitBtn.addEventListener('click', () => {
+            const location = elements.locationInput.value.trim();
+            switchTemperatureUnit('fahrenheit');
+            if (location && shouldFetchWeather(location)) {
+                fetchWeather(location);
+            }
+        });
+        
+        elements.celsiusBtn.addEventListener('click', () => {
+            const location = elements.locationInput.value.trim();
+            switchTemperatureUnit('celsius');
+            if (location && shouldFetchWeather(location)) {
+                fetchWeather(location);
+            }
+        });
+
+        function shouldFetchWeather(location) {
+            // Fetch if no weather data exists, or if location has changed
+            return !weatherData || !locationData || location.toLowerCase() !== getLocationString().toLowerCase();
+        }
+
+        function getLocationString() {
+            if (!locationData) return '';
+            const { name, country, admin1 } = locationData;
+            return admin1 ? `${name}, ${admin1}, ${country}` : `${name}, ${country}`;
+        }
+
+        function switchView(view) {
+            currentView = view;
+            
+            elements.dailyBtn.classList.toggle('active', view === 'daily');
+            elements.hourlyBtn.classList.toggle('active', view === 'hourly');
+            
+            elements.dailyView.classList.toggle('hidden', view !== 'daily');
+            elements.hourlyView.classList.toggle('hidden', view !== 'hourly');
+        }
+
+        function switchTemperatureUnit(unit) {
+            temperatureUnit = unit;
+            
+            elements.fahrenheitBtn.classList.toggle('active', unit === 'fahrenheit');
+            elements.celsiusBtn.classList.toggle('active', unit === 'celsius');
+        }
+
+        // Location input
+        elements.locationInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const location = e.target.value.trim();
+                if (location) {
+                    fetchWeather(location);
+                }
+            }
+        });
+
+        async function fetchWeather(location) {
+            showLoading();
+            hideError();
+
+            try {
+                // Geocode location
+                const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`;
+                const geoResponse = await fetch(geoUrl);
+                const geoData = await geoResponse.json();
+
+                if (!geoData.results || geoData.results.length === 0) {
+                    throw new Error('Location not found. Please try a different search.');
+                }
+
+                locationData = geoData.results[0];
+                const { latitude, longitude, name, country, admin1 } = locationData;
+
+                // Fetch weather data
+                const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code&daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,precipitation_probability_max,weather_code&temperature_unit=${temperatureUnit}&timezone=auto&forecast_days=16`;
+                
+                const weatherResponse = await fetch(weatherUrl);
+                weatherData = await weatherResponse.json();
+                locationTimezone = weatherData.timezone; // Store timezone from API
+
+                displayWeather();
+                hideLoading();
+                showWeatherData();
+
+            } catch (error) {
+                hideLoading();
+                showError(error.message);
+            }
+        }
+
+        function displayWeather() {
+            // Update location header
+            const { name, country, admin1 } = locationData;
+            const locationText = admin1 ? `${name}, ${admin1}, ${country}` : `${name}, ${country}`;
+            elements.locationName.textContent = locationText;
+            elements.locationCoords.textContent = `${locationData.latitude.toFixed(4)}°N, ${locationData.longitude.toFixed(4)}°W`;
+
+            // Render both views
+            renderDailyView();
+            renderHourlyView();
+        }
+
+        function renderDailyView() {
+            const { daily } = weatherData;
+            
+            // Get current date in location's timezone - simpler approach
+            const formatter = new Intl.DateTimeFormat('en-CA', { 
+                timeZone: locationTimezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            const todayDateString = formatter.format(new Date());
+            
+            // Find the index where today starts
+            let startIndex = 0;
+            for (let i = 0; i < daily.time.length; i++) {
+                if (daily.time[i] === todayDateString) {
+                    startIndex = i;
+                    break;
+                }
+            }
+            
+            let html = '<table class="weather-table"><thead><tr>';
+            html += '<th>Date</th>';
+            html += '<th>Temperature</th>';
+            html += '<th>Feels Like</th>';
+            html += '<th>Weather</th>';
+            html += '<th>Sun</th>';
+            html += '</tr></thead><tbody>';
+
+            // Only show 16 days starting from today
+            const endIndex = Math.min(startIndex + 16, daily.time.length);
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const dateString = daily.time[i];
+                const dateStr = formatDate(dateString);
+                const dayName = formatDayName(dateString);
+                
+                const tempMax = Math.round(daily.temperature_2m_max[i]);
+                const tempMin = Math.round(daily.temperature_2m_min[i]);
+                const feelsMax = Math.round(daily.apparent_temperature_max[i]);
+                const feelsMin = Math.round(daily.apparent_temperature_min[i]);
+                const precip = daily.precipitation_probability_max[i];
+                const weatherCode = daily.weather_code[i];
+                const weatherIcon = getWeatherIcon(weatherCode);
+                
+                const sunrise = new Date(daily.sunrise[i]).toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: locationTimezone
+                });
+                const sunset = new Date(daily.sunset[i]).toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: locationTimezone
+                });
+
+                const tempSymbol = temperatureUnit === 'fahrenheit' ? '°F' : '°C';
+
+                html += '<tr>';
+                html += `<td><strong>${dayName}</strong><br><span style="font-size: 12px; color: #666;">${dateStr}</span></td>`;
+                html += `<td class="temp">${tempMin}° / ${tempMax}${tempSymbol}</td>`;
+                html += `<td>${feelsMin}° / ${feelsMax}${tempSymbol}</td>`;
+                html += `<td style="font-size: 24px;">${weatherIcon} <span style="font-size: 14px; color: #666;">${precip}%</span></td>`;
+                html += `<td class="sun-times">↑ ${sunrise}<br>↓ ${sunset}</td>`;
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            elements.dailyView.innerHTML = html;
+        }
+
+        function renderHourlyView() {
+            const { hourly } = weatherData;
+            
+            // Get current date in location's timezone - same approach as daily
+            const formatter = new Intl.DateTimeFormat('en-CA', { 
+                timeZone: locationTimezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            const todayDateString = formatter.format(new Date());
+            
+            // Find the index where today starts
+            let startIndex = 0;
+            for (let i = 0; i < hourly.time.length; i++) {
+                if (hourly.time[i].startsWith(todayDateString)) {
+                    startIndex = i;
+                    break;
+                }
+            }
+            
+            let html = '<div class="scroll-hint">Scroll to view all 16 days of hourly data</div>';
+            html += '<table class="weather-table"><thead><tr>';
+            html += '<th>Time</th>';
+            html += '<th>Temperature</th>';
+            html += '<th>Feels Like</th>';
+            html += '<th>Weather</th>';
+            html += '</tr></thead><tbody>';
+
+            let currentDay = null;
+            
+            // Show 16 days worth of hourly data starting from today
+            const endIndex = Math.min(startIndex + (16 * 24), hourly.time.length);
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const dateTimeString = hourly.time[i];
+                const dateTime = new Date(dateTimeString);
+                const dateString = dateTimeString.split('T')[0];
+                const dayStr = formatDate(dateString);
+                
+                // Add day group header
+                if (dayStr !== currentDay) {
+                    currentDay = dayStr;
+                    const dayName = formatDayName(dateString);
+                    html += `<tr><td colspan="4" class="day-group">${dayName} — ${dayStr}</td></tr>`;
+                }
+
+                const timeStr = dateTime.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: locationTimezone
+                });
+                
+                const temp = Math.round(hourly.temperature_2m[i]);
+                const feels = Math.round(hourly.apparent_temperature[i]);
+                const precip = hourly.precipitation_probability[i];
+                const weatherCode = hourly.weather_code[i];
+                const weatherIcon = getWeatherIcon(weatherCode);
+
+                const tempSymbol = temperatureUnit === 'fahrenheit' ? '°F' : '°C';
+
+                html += '<tr>';
+                html += `<td>${timeStr}</td>`;
+                html += `<td class="temp">${temp}${tempSymbol}</td>`;
+                html += `<td>${feels}${tempSymbol}</td>`;
+                html += `<td style="font-size: 20px;">${weatherIcon} <span style="font-size: 14px; color: #666;">${precip}%</span></td>`;
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            elements.hourlyView.innerHTML = html;
+        }
+
+        function formatDate(dateString) {
+            // Parse YYYY-MM-DD directly without timezone conversion
+            const [year, month, day] = dateString.split('-');
+            return `${parseInt(month)}/${parseInt(day)}/${year}`;
+        }
+
+        function formatDayName(dateString) {
+            // Parse YYYY-MM-DD and create date in location timezone
+            const date = new Date(dateString + 'T12:00:00');
+            const options = { 
+                weekday: 'long',
+                timeZone: locationTimezone 
+            };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        function getWeatherIcon(code) {
+            // WMO Weather interpretation codes
+            const iconMap = {
+                0: '☀️',      // Clear sky
+                1: '🌤️',     // Mainly clear
+                2: '⛅',     // Partly cloudy
+                3: '☁️',     // Overcast
+                45: '🌫️',    // Fog
+                48: '🌫️',    // Depositing rime fog
+                51: '🌦️',    // Drizzle: Light
+                53: '🌦️',    // Drizzle: Moderate
+                55: '🌦️',    // Drizzle: Dense
+                56: '🌧️',    // Freezing Drizzle: Light
+                57: '🌧️',    // Freezing Drizzle: Dense
+                61: '🌧️',    // Rain: Slight
+                63: '🌧️',    // Rain: Moderate
+                65: '🌧️',    // Rain: Heavy
+                66: '🌧️',    // Freezing Rain: Light
+                67: '🌧️',    // Freezing Rain: Heavy
+                71: '❄️',     // Snow fall: Slight
+                73: '❄️',     // Snow fall: Moderate
+                75: '❄️',     // Snow fall: Heavy
+                77: '❄️',     // Snow grains
+                80: '🌦️',    // Rain showers: Slight
+                81: '🌧️',    // Rain showers: Moderate
+                82: '🌧️',    // Rain showers: Violent
+                85: '❄️',     // Snow showers: Slight
+                86: '❄️',     // Snow showers: Heavy
+                95: '⛈️',     // Thunderstorm: Slight or moderate
+                96: '⛈️',     // Thunderstorm with slight hail
+                99: '⛈️'      // Thunderstorm with heavy hail
+            };
+            return iconMap[code] || '☀️';
+        }
+
+        function showLoading() {
+            elements.loading.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            elements.loading.classList.add('hidden');
+        }
+
+        function showError(message) {
+            elements.error.textContent = message;
+            elements.error.classList.remove('hidden');
+        }
+
+        function hideError() {
+            elements.error.classList.add('hidden');
+        }
+
+        function showWeatherData() {
+            elements.weatherData.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
